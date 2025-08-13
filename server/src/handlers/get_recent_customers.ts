@@ -1,8 +1,20 @@
+import { db } from '../db';
+import { customersTable } from '../db/schema';
 import { type Customer } from '../schema';
+import { desc } from 'drizzle-orm';
 
 export const getRecentCustomers = async (): Promise<Customer[]> => {
-    // This is a placeholder declaration! Real code should be implemented here.
-    // The goal of this handler is fetching the last 10 customers added to the database,
-    // ordered by creation date in descending order.
-    return [];
+  try {
+    // Query the last 10 customers ordered by creation date (most recent first)
+    const results = await db.select()
+      .from(customersTable)
+      .orderBy(desc(customersTable.created_at))
+      .limit(10)
+      .execute();
+
+    return results;
+  } catch (error) {
+    console.error('Failed to fetch recent customers:', error);
+    throw error;
+  }
 };

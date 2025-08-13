@@ -1,15 +1,51 @@
+import { db } from '../db';
+import { customersTable } from '../db/schema';
 import { type UpdateCustomerInput, type Customer } from '../schema';
+import { eq } from 'drizzle-orm';
 
 export const updateCustomer = async (input: UpdateCustomerInput): Promise<Customer> => {
-    // This is a placeholder declaration! Real code should be implemented here.
-    // The goal of this handler is updating an existing customer in the database
-    // with the provided fields. Only provided fields should be updated.
-    return Promise.resolve({
-        id: input.id,
-        name: input.name || 'Existing Name',
-        email: input.email || 'existing@example.com',
-        phone: input.phone || '555-0000',
-        address: input.address || 'Existing Address',
-        created_at: new Date() // This should be the original creation date
-    } as Customer);
+  try {
+    // First, check if the customer exists
+    const existingCustomer = await db.select()
+      .from(customersTable)
+      .where(eq(customersTable.id, input.id))
+      .execute();
+
+    if (existingCustomer.length === 0) {
+      throw new Error(`Customer with id ${input.id} not found`);
+    }
+
+    // Build update object with only provided fields
+    const updateData: Partial<typeof customersTable.$inferInsert> = {};
+    
+    if (input.name !== undefined) {
+      updateData.name = input.name;
+    }
+    if (input.email !== undefined) {
+      updateData.email = input.email;
+    }
+    if (input.phone !== undefined) {
+      updateData.phone = input.phone;
+    }
+    if (input.address !== undefined) {
+      updateData.address = input.address;
+    }
+
+    // If no fields to update, return the existing customer
+    if (Object.keys(updateData).length === 0) {
+      return existingCustomer[0];
+    }
+
+    // Update customer record
+    const result = await db.update(customersTable)
+      .set(updateData)
+      .where(eq(customersTable.id, input.id))
+      .returning()
+      .execute();
+
+    return result[0];
+  } catch (error) {
+    console.error('Customer update failed:', error);
+    throw error;
+  }
 };

@@ -1,15 +1,25 @@
+import { db } from '../db';
+import { customersTable } from '../db/schema';
 import { type GetCustomerInput, type Customer } from '../schema';
+import { eq } from 'drizzle-orm';
 
 export const getCustomer = async (input: GetCustomerInput): Promise<Customer | null> => {
-    // This is a placeholder declaration! Real code should be implemented here.
-    // The goal of this handler is fetching a single customer by ID from the database.
-    // Returns null if customer is not found.
-    return Promise.resolve({
-        id: input.id,
-        name: 'Placeholder Name',
-        email: 'placeholder@example.com',
-        phone: '555-0000',
-        address: 'Placeholder Address',
-        created_at: new Date()
-    } as Customer);
+  try {
+    // Query customer by ID
+    const result = await db.select()
+      .from(customersTable)
+      .where(eq(customersTable.id, input.id))
+      .execute();
+
+    // Return null if customer not found
+    if (result.length === 0) {
+      return null;
+    }
+
+    // Return the first (and only) customer
+    return result[0];
+  } catch (error) {
+    console.error('Customer retrieval failed:', error);
+    throw error;
+  }
 };
